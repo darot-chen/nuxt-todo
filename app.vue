@@ -11,9 +11,19 @@
         </div>
         <div class="p-4 border rounded-b-md space-y-2">
           <p>Item</p>
-          <input type="text" class="rounded-md border px-4 py-2 w-full text-sm" placeholder="What do you want to do ?">
+          <input
+            v-model="newTodo"
+            type="text"
+            class="rounded-md border px-4 py-2 w-full text-sm"
+            placeholder="What do you want to do ?"
+          />
           <p class="text-sm">Enter what you want to procastinate</p>
-          <button class="bg-blue-600 hover:bg-blue-400 text-white text-sm px-3 py-1.5 rounded-md">Submit</button>
+          <button
+            class="bg-blue-600 hover:bg-blue-400 text-white text-sm px-3 py-1.5 rounded-md"
+            @click="createTodo"
+          >
+            Submit
+          </button>
         </div>
       </div>
       <!-- Task List -->
@@ -27,32 +37,32 @@
               <tr>
                 <th>Item</th>
                 <th>Status</th>
-                <th>Action</th>
+                <th class="!text-center">Action</th>
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td>Buy Benz</td>
-                <td>Not Completed</td>
-                <td>
-                  <button class="bg-blue-600 hover:bg-blue-400 text-white px-3 py-1 rounded-md mr-2">Complete</button>
-                  <button class="bg-red-600 hover:bg-red-400 text-white px-3 py-1 rounded-md">Delete</button>
+              <tr v-for="(todo, index) in todoList" :key="index">
+                <td>{{ todo.item }}</td>
+                <td
+                  :class="[
+                    todo.completed == 0 ? 'text-red-500' : 'text-green-500',
+                  ]"
+                >
+                  {{ todo.completed == 0 ? "Not Complete" : "Completed" }}
                 </td>
-              </tr>
-              <tr>
-                <td>Buy Benz</td>
-                <td>Not Completed</td>
-                <td>
-                  <button class="bg-blue-600 hover:bg-blue-400 text-white px-3 py-1 rounded-md mr-2">Complete</button>
-                  <button class="bg-red-600 hover:bg-red-400 text-white px-3 py-1 rounded-md">Delete</button>
-                </td>
-              </tr>
-              <tr>
-                <td>Buy Benz</td>
-                <td>Not Completed</td>
-                <td>
-                  <button class="bg-blue-600 hover:bg-blue-400 text-white px-3 py-1 rounded-md mr-2">Complete</button>
-                  <button class="bg-red-600 hover:bg-red-400 text-white px-3 py-1 rounded-md">Delete</button>
+                <td class="flex justify-center">
+                  <button
+                    class="bg-blue-600 hover:bg-blue-400 text-white px-3 py-1 rounded-md mr-2"
+                    @click="toggleCompleteTodo(todo)"
+                  >
+                    {{ todo.completed == 0 ? "Complete" : "Incomplete" }}
+                  </button>
+                  <button
+                    class="bg-red-600 hover:bg-red-400 text-white px-3 py-1 rounded-md"
+                    @click="deleteTodo(todo)"
+                  >
+                    Delete
+                  </button>
                 </td>
               </tr>
             </tbody>
@@ -63,12 +73,67 @@
   </div>
 </template>
 
-<style scoped>
-  th {
-    @apply text-start font-semibold text-sm
-  }
+<script setup lang="ts">
+import type { Todo } from "./models/todo";
 
-  td {
-    @apply py-2 text-sm
-  }
+const url = "http://127.0.0.1:3000/api/todo";
+
+const todoList = ref<Todo[]>([]);
+const newTodo = ref<string>();
+
+async function getTodo() {
+  const res: any = await $fetch(url, {
+    method: "GET",
+  });
+
+  todoList.value = res.data;
+}
+
+async function createTodo() {
+  const res: any = await $fetch(url, {
+    method: "POST",
+    body: {
+      item: newTodo.value,
+      completed: 0,
+    },
+  });
+
+  newTodo.value = "";
+
+  await getTodo();
+}
+
+async function toggleCompleteTodo(todo: Todo) {
+  const res: any = await $fetch(`${url}\\${todo.id}`, {
+    method: "PUT",
+    body: {
+      item: todo.item,
+      completed: todo.completed == 0 ? 1 : 0,
+    },
+  });
+
+  await getTodo();
+}
+
+async function deleteTodo(todo: Todo) {
+  const res: any = await $fetch(`${url}\\${todo.id}`, {
+    method: "DELETE",
+  });
+
+  await getTodo();
+}
+
+onMounted(async () => {
+  await getTodo();
+});
+</script>
+
+<style scoped>
+th {
+  @apply text-start font-semibold text-sm;
+}
+
+td {
+  @apply py-2 text-sm;
+}
 </style>
